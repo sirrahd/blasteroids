@@ -1,10 +1,4 @@
-#include <stdio.h>
-#include <errno.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <math.h>
-#include <string.h>
-#include "common.h"
+#include "blasteroids.h"
 
 const float FPS = 60;
 const int SCREEN_X = 640;

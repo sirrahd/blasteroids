@@ -1,9 +1,4 @@
-#include <stdlib.h>
-#include <math.h>
-#include <allegro5/allegro.h>
-#include <allegro5/allegro_primitives.h>
-#include "common.h"
-#include "spaceship.h"
+#include "blasteroids.h"
 
 void draw_ship(Spaceship*);
 

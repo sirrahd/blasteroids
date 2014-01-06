@@ -1,7 +1,4 @@
-#include <stdio.h>
-#include <allegro5/allegro.h>
-#include "common.h"
-#include "spaceship.h"
+#include "blasteroids.h"
 
 /*const int BOUNCER_SIZE = 32;*/
 enum MYKEYS {

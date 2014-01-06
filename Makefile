@@ -1,21 +1,24 @@
-blasteroids: blasteroids.o common.o spaceship.o
-	gcc $^ -O3 -o blasteroids -lm -lallegro -lallegro_primitives
+CC=gcc
+W=-Werror
+CFLAGS=-O3 -lallegro -lallegro_primitives -lm -p
+DEBUGFLAGS=$(CFLAGS) $(W) -g
+OBJECTS=blasteroids.o common.o spaceship.o
+
+blasteroids: $(OBJECTS)
+	$(CC) $(CFLAGS) $^ -o $@ 
 	./blasteroids
 
-blasteroids.o: blasteroids.c common.h spaceship.h
-	gcc -c -O3 $^
+blasteroids.o: blasteroids.c blasteroids.h
+	$(CC) $(CFLAGS) $(W) -c $^
 
-common.o: common.c
-	gcc -c -O3 $^
+common.o: common.c blasteroids.h
+	$(CC) $(CFLAGS) $(W) -c $^
 
-spaceship.o: spaceship.c common.h spaceship.h
-	gcc -c -O3 $^
+spaceship.o: spaceship.c blasteroids.h
+	$(CC) $(CFLAGS) $(W) -c $^
 
-debug: blasteroids.c
-	gcc $^ -g -o blasteroids -lallegro
-	
-test: common_test.c common.c
-	gcc $^ -o test
+debug: %.c
+	$(CC) $(DEBUGFLAGS) $^ -o blasteroids
 
 clean:
 	rm -f *.o
