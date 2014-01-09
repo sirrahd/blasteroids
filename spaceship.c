@@ -1,24 +1,12 @@
 #include "blasteroids.h"
 
-void draw_ship(Spaceship*);
-
 const int SHIP_DIM_X = 20;
 const int SHIP_DIM_Y = 20;
 const float SHIP_MAX_SPEED = 5.0;
 const float SHIP_ACCELERATION = 0.2;
 
-Spaceship* create_ship() {
-	Spaceship* s = malloc(sizeof(Spaceship));
-	s->x = SCREEN_X / 2;
-	s->y = SCREEN_Y / 2;
-	s->heading = 0;
-	s->gone = false;
-	s->accel = false;
-	s->bitmap = al_create_bitmap(SHIP_DIM_X, SHIP_DIM_Y);
-	if(!s->bitmap)
-		error("Couldn't create spaceship");
-	draw_ship(s);
-	return s;
+void rotate_ship(Spaceship* s) {
+	s->heading = rotate(s->heading, s->rotate);
 }
 
 void move_ship(Spaceship* s, int direction) {
@@ -42,19 +30,6 @@ void move_ship(Spaceship* s, int direction) {
 		s->y -= SCREEN_Y;
 	else if (s->y < - SHIP_DIM_Y / 2)
 		s->y += SCREEN_Y;
-}
-
-void rotate_ship(Spaceship* s) {
-	s->heading = rotate(s->heading, s->rotate);
-//	al_set_target_bitmap(s->bitmap);
-//	ALLEGRO_TRANSFORM transform;
-//	al_rotate_transform(&transform, s->heading);
-//	al_use_transform(&transform);
-}
-
-void destroy_ship(Spaceship* s) {
-	al_destroy_bitmap(s->bitmap);
-	free(s);
 }
 
 void draw_ship(Spaceship* s)
@@ -81,5 +56,27 @@ void draw_ship(Spaceship* s)
 	
 	al_identity_transform(&transform);
 	al_use_transform(&transform);
+}
+
+Spaceship* create_ship() {
+	Spaceship* s = malloc(sizeof(Spaceship));
+	s->x = SCREEN_X / 2;
+	s->y = SCREEN_Y / 2;
+	s->heading = 0;
+	s->speed_x = 0;
+	s->speed_y = 0;
+	s->accel = false;
+	s->rotate = false;
+	s->gone = false;
+	s->bitmap = al_create_bitmap(SHIP_DIM_X, SHIP_DIM_Y);
+	if(!s->bitmap)
+		error("Couldn't create spaceship");
+	draw_ship(s);
+	return s;
+}
+
+void destroy_ship(Spaceship* s) {
+	al_destroy_bitmap(s->bitmap);
+	free(s);
 }
 
