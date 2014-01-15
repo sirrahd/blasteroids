@@ -4,13 +4,11 @@ const float FPS = 60;
 const float SCREEN_X = 640;
 const float SCREEN_Y = 480;
 
-Object* ship = NULL;
-
 void destroy(Object* o) {
 	Object* previous;
 
 	if (ship->id == o->id) {
-		ship = o->next;
+		ship = create(Spaceship);//o->next;
 		free(o);
 		return;
 	}
@@ -29,7 +27,7 @@ float rotate(float heading, float speed) {
 }
 
 
-void collide(Object* o) {
+int collide(Object* o) {
 Object* i;
 	for (i = o->next; i != NULL; i = i->next) {
 		if (
@@ -64,17 +62,24 @@ Object* i;
 			
 			destroy(o);
 			destroy(i);
+			return 1;
 			
 		}
 	}
+	
+	return 0;
 }
 
-void move(Object* o) {
-	// Check for collisions
-	collide(o);
+void move(Object* o) {	
+	if (o->type == Asteroid)
+		printf("Speed is %f; heading went from %f", o->speed.r, o->heading);
 	
 	// Heading
 	o->heading = rotate(o->heading, o->speed.r);
+	
+	
+	if (o->type == Asteroid)
+		printf("to %f\n", o->heading);
 	
 	// Velocity
 	o->speed.x += o->acceleration * sinf(o->heading);
@@ -190,7 +195,7 @@ Object* create(Type type) {
 		o->heading = (float)rand();
 		o->speed.x = (float)rand() / (float)RAND_MAX * o->max_speed * 2.0 - o->max_speed;
 		o->speed.y = (float)rand() / (float)RAND_MAX * o->max_speed * 2.0 - o->max_speed;
-		o->speed.r = 0.2;//(float)rand() / (float)RAND_MAX * 2.0 - 1.0;
+		o->speed.r = 20;//(float)rand() / (float)RAND_MAX * 2.0 - 1.0;
 		o->color = al_map_rgb(0,255,255);
 	}
 	else if (type == Blast) {
@@ -231,6 +236,9 @@ void draw_all() {
 	Object* o;
 	for (o = ship; o != NULL; o = o->next) {
 		draw(o);
+		
+		// Check for collisions
+		collide(o);
 	}
 }
 

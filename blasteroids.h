@@ -5,10 +5,6 @@
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_primitives.h>
 
-extern const float FPS;
-extern const float SCREEN_X;
-extern const float SCREEN_Y;
-
 typedef enum {
 	Spaceship,
 	Asteroid,
@@ -35,6 +31,11 @@ typedef struct Object {
 	ALLEGRO_COLOR color;
 	struct Object* next;
 } Object;
+
+extern const float FPS;
+extern const float SCREEN_X;
+extern const float SCREEN_Y;
+Object* ship;
 
 void abort_game(const char* message);
 

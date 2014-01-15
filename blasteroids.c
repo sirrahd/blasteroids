@@ -58,7 +58,7 @@ void game_loop() {
 	srand((unsigned)time(NULL));
 	
 	// Need to move these somewhere better
-	Object* ship = create(Spaceship);
+	ship = create(Spaceship);
 	create(Asteroid);
 	create(Asteroid);
 	create(Asteroid);

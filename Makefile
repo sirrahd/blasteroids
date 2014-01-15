@@ -19,7 +19,8 @@ debug: *.c
 	valgrind --leak-check=full --track-origins=yes ./blasteroids
 
 clean:
-	rm -f *.o
-	rm -f *.gch
+	rm *.o
+	rm *.gch
 	rm blasteroids
 	rm core
+	rm *.out
