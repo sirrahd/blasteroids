@@ -5,15 +5,23 @@
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_primitives.h>
 
-typedef struct {
-	enum {
-		SPACESHIP,
-		ASTEROID
-	} type;
+extern const float FPS;
+extern const float SCREEN_X;
+extern const float SCREEN_Y;
+
+typedef enum {
+	Spaceship,
+	Asteroid,
+	Blast
+} Type;
+
+typedef struct Object {
+	int id;
+	Type type;
 	struct {
 		float x;
 		float y;
-	} location;
+	} position;
 	struct {
 		float x;
 		float y;
@@ -21,54 +29,15 @@ typedef struct {
 	} speed;
 	float heading;
 	float acceleration;
-	int gone;
+	float size;
+	int max_speed;
+	int state;
 	ALLEGRO_COLOR color;
-	ALLEGRO_BITMAP* bitmap;
+	struct Object* next;
 } Object;
 
-typedef struct {
-	float x;
-	float y;
-	float heading;
-	float speed_x;
-	float speed_y;
-	int accel;
-	float rotate;
-	int gone;
-	ALLEGRO_BITMAP* bitmap;
-} Spaceship;
+void abort_game(const char* message);
 
-typedef struct {
-	float x;
-	float y;
-	float heading;
-	float speed_x;
-	float speed_y;
-	float rotate;
-	float size;
-	int gone;
-	ALLEGRO_COLOR color;
-	ALLEGRO_BITMAP* bitmap;
-} Asteroid;
-
-extern const float FPS;
-extern const int SCREEN_X;
-extern const int SCREEN_Y;
-
-float rotate(float r, float direction);
-/* returns: rotated coordinates in radians
- * float r: current direction
- * int direction: direction to rotate (1 for cw or -1 for ccw), or different
- * factor to change rotation speeds.
- */
-
-Spaceship* create_ship();
-void draw_ship(Spaceship *s);
-void destroy_ship(Spaceship* s);
-
-Asteroid* create_asteroid();
-void draw_asteroid(Asteroid* a);
-void destroy_asteroid(Asteroid* a);
-
-//Maybe remove later
-void rotate_ship(Spaceship* s);
+void clean();
+void draw_all();
+Object* create();

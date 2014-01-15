@@ -3,3 +3,6 @@
 *.out
 blasteroids
 core
+gmon.out
+vgcore.*
+*.out

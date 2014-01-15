@@ -20,13 +20,6 @@ void abort_game(const char* message) {
 }
 
 void shutdown() {
-	//if (timer)
-	//	al_destroy_timer(timer);
-	//if (display)
-	//	al_destroy_display(display);
-	//if (event_queue)
-	//	al_destroy_event_queue(event_queue);
-	
 	return;
 }
 
@@ -65,33 +58,45 @@ void game_loop() {
 	srand((unsigned)time(NULL));
 	
 	// Need to move these somewhere better
-	Spaceship* ship = NULL;
-	Asteroid* asteroid = NULL;
+	Object* ship = create(Spaceship);
+	create(Asteroid);
+	create(Asteroid);
+	create(Asteroid);
 	al_clear_to_color(al_map_rgb(0,0,0));
 	al_flip_display();
-	al_start_timer(timer);	
-	ship = create_ship();
-	asteroid = create_asteroid();
-		
+	al_start_timer(timer);
+
 	while (!done) {
 		ALLEGRO_EVENT event;
 		al_wait_for_event(event_queue, &event);
 		
 		if (event.type == ALLEGRO_EVENT_TIMER) {
 			if(key[KEY_UP]) {
-				ship->accel = -1;
+				ship->acceleration = 0.2;
 			}
 			
 			if(key[KEY_DOWN]) {
-				ship->accel = 1;
+				ship->acceleration = -0.2;
+			}
+			
+			if(key[KEY_UP] && key[KEY_DOWN]) {
+				ship->acceleration = 0.0;
 			}
 			
 			if(key[KEY_LEFT]) {
-				ship->rotate = -1;
+				ship->speed.r = -1.0;
 			}
 			
 			if(key[KEY_RIGHT]) {
-				ship->rotate = 1;
+				ship->speed.r = 1.0;
+			}
+			
+			if(key[KEY_RIGHT] && key[KEY_LEFT]) {
+				ship->speed.r = 0.0;
+			}
+			
+			if(key[KEY_SPACE]) {
+				create(Blast);
 			}
 			
 			redraw = true;
@@ -103,69 +108,77 @@ void game_loop() {
 		else if (event.type == ALLEGRO_EVENT_KEY_DOWN) {
 			switch(event.keyboard.keycode) {
 				case ALLEGRO_KEY_UP:
+				case ALLEGRO_KEY_W:
 					key[KEY_UP] = true;
 					break;
 				
 				case ALLEGRO_KEY_DOWN:
+				case ALLEGRO_KEY_S:
 					key[KEY_DOWN] = true;
 					break;
 				
 				case ALLEGRO_KEY_LEFT:
+				case ALLEGRO_KEY_A:
 					key[KEY_LEFT] = true;
 					break;
 				
 				case ALLEGRO_KEY_RIGHT:
+				case ALLEGRO_KEY_D:
 					key[KEY_RIGHT] = true;
 					break;
 				
 				case ALLEGRO_KEY_SPACE:
+				case ALLEGRO_KEY_ENTER:
 					key[KEY_SPACE] = true;
 					break;
 			}
 		}
 		else if(event.type == ALLEGRO_EVENT_KEY_UP) {
 			switch(event.keyboard.keycode) {
-				case ALLEGRO_KEY_UP:
-					key[KEY_UP] = false;
-					ship->accel = 0;
-					break;
+			case ALLEGRO_KEY_UP:
+			case ALLEGRO_KEY_W:
+				key[KEY_UP] = false;
+				ship->acceleration = 0;
+				break;
+			
+			case ALLEGRO_KEY_DOWN:
+			case ALLEGRO_KEY_S:
+				key[KEY_DOWN] = false;
+				ship->acceleration = 0;
+				break;
+			
+			case ALLEGRO_KEY_LEFT:
+			case ALLEGRO_KEY_A:
+				key[KEY_LEFT] = false;
+				ship->speed.r = 0;
+				break;
+			
+			case ALLEGRO_KEY_RIGHT:
+			case ALLEGRO_KEY_D:
+				key[KEY_RIGHT] = false;
+				ship->speed.r = 0;
+				break;
+			
+			case ALLEGRO_KEY_SPACE:
+			case ALLEGRO_KEY_ENTER:
+				key[KEY_SPACE] = false;
+				break;
 				
-				case ALLEGRO_KEY_DOWN:
-					key[KEY_DOWN] = false;
-					ship->accel = 0;
-					break;
-				
-				case ALLEGRO_KEY_LEFT:
-					key[KEY_LEFT] = false;
-					ship->rotate = 0;
-					break;
-				
-				case ALLEGRO_KEY_RIGHT:
-					key[KEY_RIGHT] = false;
-					ship->rotate = 0;
-					break;
-					
-				case ALLEGRO_KEY_ESCAPE:
-					done = true;
-					break;
+			case ALLEGRO_KEY_ESCAPE:
+				done = true;
+				break;
 			}
 		}
 		
 		if(redraw && al_is_event_queue_empty(event_queue)) {
 			redraw = false;
-			draw_ship(ship);
-			draw_asteroid(asteroid);
 			al_set_target_bitmap(al_get_backbuffer(display));
-			al_clear_to_color(al_map_rgb(255,255,255));
-			al_draw_bitmap(ship->bitmap, ship->x, ship->y, 0);
-			al_draw_bitmap(asteroid->bitmap, asteroid->x, asteroid->y, 0);
+			al_clear_to_color(al_map_rgb(0,0,0));
+			draw_all();
+			clean();
 			al_flip_display();
 		}
 	}
-	
-	// Need to move this
-	destroy_ship(ship);
-	destroy_asteroid(asteroid);
 }
 
 int main(int argc, char** argv){
