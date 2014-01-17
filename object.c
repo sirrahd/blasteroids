@@ -26,7 +26,9 @@ float rotate(float heading, float speed) {
 	return heading + rotation_unit * speed;
 }
 
-
+// Note: This function only checks collisions with objects *after*
+// the current object in the list. Shouldn't be run without looping
+// through all objects
 int collide(Object* o) {
 Object* i;
 	for (i = o->next; i != NULL; i = i->next) {
@@ -58,10 +60,21 @@ Object* i;
 			// A collision occurred between i and o
 			if (o->type == Spaceship && i->type == Blast ||
 				o->type == Asteroid && i->type == Asteroid)
+			{
 				continue;
-			
-			destroy(o);
-			destroy(i);
+			}
+			else if (o->type == Spaceship && i->type == Asteroid) {
+				o->state = -1;
+			}
+			else if (o->type == Asteroid && i->type == Spaceship) {
+				i->state = -1;
+			}
+			else if (o->type == Asteroid && i->type == Blast ||
+				o->type == Blast && i->type == Asteroid)
+			{		
+				o->state = -1;
+				i->state = -1;
+			}
 			return 1;
 			
 		}
@@ -221,17 +234,17 @@ Object* create(Type type) {
 void clean() {
 	Object* o;
 	for (o = ship; o != NULL; o = o->next)
+	{
+		collide(o);
 		if (o->state == -1)
 			destroy(o);
+	}
 }
 
 void draw_all() {
 	Object* o;
 	for (o = ship; o != NULL; o = o->next) {
 		draw(o);
-		
-		// Check for collisions
-		collide(o);
 	}
 }
 
