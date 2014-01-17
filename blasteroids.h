@@ -26,7 +26,7 @@ typedef struct Object {
 	float heading;
 	float acceleration;
 	float size;
-	int max_speed;
+	float max_speed;
 	int state;
 	ALLEGRO_COLOR color;
 	struct Object* next;

@@ -70,16 +70,9 @@ Object* i;
 	return 0;
 }
 
-void move(Object* o) {	
-	if (o->type == Asteroid)
-		printf("Speed is %f; heading went from %f", o->speed.r, o->heading);
-	
+void move(Object* o) {		
 	// Heading
 	o->heading = rotate(o->heading, o->speed.r);
-	
-	
-	if (o->type == Asteroid)
-		printf("to %f\n", o->heading);
 	
 	// Velocity
 	o->speed.x += o->acceleration * sinf(o->heading);
@@ -178,7 +171,7 @@ Object* create(Type type) {
 	o->heading = 0;
 	o->acceleration = 0;
 	o->size = 0;
-	o->max_speed = 5;
+	o->max_speed = 5.0;
 	o->state = 0;
 	o->color = al_map_rgb(255,255,255);
 	o->next = NULL;
@@ -192,10 +185,10 @@ Object* create(Type type) {
 		o->size = 40.0;
 		o->position.x = rand() % (int)SCREEN_X;
 		o->position.y = rand() % (int)SCREEN_Y;
-		o->heading = (float)rand();
+		o->heading = 0.0;
 		o->speed.x = (float)rand() / (float)RAND_MAX * o->max_speed * 2.0 - o->max_speed;
 		o->speed.y = (float)rand() / (float)RAND_MAX * o->max_speed * 2.0 - o->max_speed;
-		o->speed.r = 20;//(float)rand() / (float)RAND_MAX * 2.0 - 1.0;
+		o->speed.r = (float)rand() / (float)RAND_MAX - 0.5;
 		o->color = al_map_rgb(0,255,255);
 	}
 	else if (type == Blast) {

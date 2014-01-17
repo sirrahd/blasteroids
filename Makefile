@@ -5,8 +5,8 @@ DEBUGFLAGS=$(CFLAGS) $(W) -g
 OBJECTS=blasteroids.o object.o
 
 blasteroids: $(OBJECTS)
-	$(CC) $(CFLAGS) $^ -o $@
-	./blasteroids > latest.out
+	$(CC) $^ -o $@  $(CFLAGS)
+	./blasteroids
 
 blasteroids.o: blasteroids.c blasteroids.h
 	$(CC) $(CFLAGS) $(W) -c $^
