@@ -6,7 +6,6 @@ OBJECTS=blasteroids.o object.o
 
 blasteroids: $(OBJECTS)
 	$(CC) $^ -o $@  $(CFLAGS)
-	./blasteroids
 
 blasteroids.o: blasteroids.c blasteroids.h
 	$(CC) $(CFLAGS) $(W) -c $^
@@ -19,8 +18,9 @@ debug: *.c
 	valgrind --leak-check=full --track-origins=yes ./blasteroids
 
 clean:
-	rm *.o
-	rm *.gch
-	rm blasteroids
-	rm core
-	rm *.out
+	rm -f *.o
+	rm -f *.gch
+	rm -f blasteroids
+	rm -f core
+	rm -f *.out
+	rm -f vgcore.*

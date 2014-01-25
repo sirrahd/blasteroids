@@ -50,6 +50,14 @@ void init() {
 	done = false;
 }
 
+void new_game() {
+	ship = create(Spaceship);
+	
+	int asteroidCount;
+	for(asteroidCount = rand() % 5; asteroidCount >=0; asteroidCount--)
+		create(Asteroid);
+}
+
 void game_loop() {
 	int redraw = true;
 	al_start_timer(timer);
@@ -57,11 +65,7 @@ void game_loop() {
 	
 	srand((unsigned)time(NULL));
 	
-	// Need to move these somewhere better
-	ship = create(Spaceship);
-	create(Asteroid);
-	create(Asteroid);
-	create(Asteroid);
+	new_game();
 	al_clear_to_color(al_map_rgb(0,0,0));
 	al_flip_display();
 	al_start_timer(timer);
