@@ -1,21 +1,20 @@
 CC=gcc
 W=-Werror
-CFLAGS=-O3 -lallegro -lallegro_primitives -lm -p
+CFLAGS=-lallegro -lallegro_primitives -lm -p
+COPTS=-O3
 DEBUGFLAGS=$(CFLAGS) $(W) -g
 OBJECTS=blasteroids.o object.o
 
-blasteroids: $(OBJECTS)
-	$(CC) $^ -o $@  $(CFLAGS)
+default: clean debug run
 
-blasteroids.o: blasteroids.c blasteroids.h
-	$(CC) $(CFLAGS) $(W) -c $^
-
-object.o: object.c blasteroids.h
-	$(CC) $(CFLAGS) $(W) -c $^
+production: *.c *.h
+	$(CC) $^ -o blasteroids $(COPTS) $(CFLAGS) 
 	
-debug: *.c
-	$(CC) $(DEBUGFLAGS) $^ -o blasteroids
-	valgrind --leak-check=full --track-origins=yes ./blasteroids
+debug: *.c *.h
+	$(CC) $^ -o blasteroids $(DEBUGFLAGS)
+
+run:
+	valgrind --leak-check=full --track-origins=yes ./blasteroids > valgrind.out 2>&1
 
 clean:
 	rm -f *.o

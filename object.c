@@ -1,250 +1,205 @@
-#include "blasteroids.h"
+#include <stdlib.h>
+#include <math.h>
+#include <allegro5/allegro.h>
+#include <allegro5/allegro_primitives.h>
+#include "game.h"
 
-const float FPS = 60;
-const float SCREEN_X = 640;
-const float SCREEN_Y = 480;
-
-void destroy(Object* o) {
-	Object* previous;
-
-	if (ship->id == o->id) {
-		ship = create(Spaceship);//o->next;
-		free(o);
-		return;
-	}
+// Creates a new object
+Object* new_object()
+{
+	Object* o = malloc(sizeof(Object));
+	list_add(game->objects, o);
 	
-	for (previous = ship; previous->next->id != o->id; previous = previous->next);
+	o->type = Spaceship;
+	o->structure.size = 0.0;
+	o->structure.color = al_map_rgb(0,0,0);
+	o->state.value = 0;
+	o->state.time = 0;
+	o->position.x = 0;
+	o->position.y = 0;
+	o->position.r = 0.0;
+	o->velocity.x = 0.0;
+	o->velocity.y = 0.0;
+	o->velocity.r = 0.0;
+	o->acceleration.x = 0.0;
+	o->acceleration.y = 0.0;
+	o->acceleration.r = 0.0;
+	o->max_speed = 0.0;
 	
-	previous->next = o->next;
-		
+	return o;
+}
+	
+// Deletes an object
+void delete_object(Object* o) {
+	list_remove(game->objects, o);
 	free(o);
+}
+
+void draw_object(Object* o) {
+	ALLEGRO_TRANSFORM transform;
+	/* start for hit target tracking
+	al_identity_transform(&transform);
+	al_translate_transform(&transform, o->position.x, o->position.y);
+	al_use_transform(&transform);
+	al_draw_filled_rectangle(-o->structure.size / 2.0, -o->structure.size / 2.0, o->structure.size / 2.0, o->structure.size / 2.0, al_map_rgb(255,255,255));
+	*/// end hit target tracking
+	al_identity_transform(&transform);
+	al_rotate_transform(&transform, o->position.r);
+	al_translate_transform(&transform, o->position.x, o->position.y);
+	al_use_transform(&transform);
+	switch(o->type) {
+		case Spaceship:
+			draw_spaceship(o);
+			break;
+		case Asteroid:
+			draw_asteroid(o);
+			break;
+		case Blast:
+			draw_blast(o);
+			break;
+	}
+	al_identity_transform(&transform);
+	al_use_transform(&transform);
 }
 
 float rotate(float heading, float speed) {
 	const float rotation_unit = (float)(M_PI / 16.0);
-	
+	while(fabs(heading) > 2 * M_PI) {
+		if(heading > 0)
+			heading -= 2 * M_PI;
+		else
+			heading += 2 * M_PI;
+	}
 	return heading + rotation_unit * speed;
 }
 
-// Note: This function only checks collisions with objects *after*
-// the current object in the list. Shouldn't be run without looping
-// through all objects
-int collide(Object* o) {
-Object* i;
-	for (i = o->next; i != NULL; i = i->next) {
+void rotate_object(Object* o, int direction) {
+	o->velocity.r = (float)direction;
+}
+
+void accelerate_object(Object* o, float linear) {
+	o->acceleration.x = linear * sinf(o->position.r);
+	o->acceleration.y = linear * cosf(o->position.r);
+}
+
+// Modifies objects o and p in response to a collision
+void collide_object(Object* o, Object* p) {
+	if(
+		(o->type == Blast && p == game->ship) ||
+		(p->type == Blast && o == game->ship) ||
+		(o->type == Blast && p->type == Blast)
+	)
+		return;
+	
+	o->state.value = o->state.value | (Collision | EngineFail);
+	o->state.time = p->state.time = 10;
+	
+	Euclidean vo;
+	Euclidean vp;
+	
+	vo.x = (o->velocity.x * (o->structure.size - p->structure.size) + 2 * p->structure.size * p->velocity.x)
+		/ (o->structure.size + p->structure.size);
+	vo.y = (o->velocity.y * (o->structure.size - p->structure.size) + 2 * p->structure.size * p->velocity.y)
+		/ (o->structure.size + p->structure.size);
+	vo.r = (o->velocity.r * (o->structure.size - p->structure.size) + 2 * p->structure.size * p->velocity.r)
+		/ (o->structure.size + p->structure.size);
+	vp.x = (p->velocity.x * (p->structure.size - o->structure.size) + 2 * o->structure.size * o->velocity.x)
+		/ (p->structure.size + o->structure.size);
+	vp.y = (p->velocity.y * (p->structure.size - o->structure.size) + 2 * o->structure.size * o->velocity.y)
+		/ (p->structure.size + o->structure.size);
+	vp.r = (p->velocity.r * (p->structure.size - o->structure.size) + 2 * o->structure.size * o->velocity.r)
+		/ (p->structure.size + o->structure.size);
+		
+	o->velocity.x = vo.x;
+	o->velocity.y = vo.y;
+	o->velocity.r = vo.r;
+	p->velocity.x = vp.x;
+	p->velocity.y = vp.y;
+	p->velocity.r = vp.r;
+}
+
+// Scans the game list for any collisions with the object after the object
+// Based on the current state of the game list
+void collision_scan(Object* o) {
+	Object* p = NULL;
+	List child = {
+		.start = game->objects->current,
+		.current = game->objects->current
+	};
+	for(p = list_next(&child); p != NULL; p = list_next(&child)) {
 		if (
-			((i->position.x - i->size / 2.0 > o->position.x - o->size / 2.0
-			&& i->position.x - i->size / 2.0 < o->position.x + o->size / 2.0)
+			((p->position.x - p->structure.size / 2.0 > o->position.x - o->structure.size / 2.0
+			&& p->position.x - p->structure.size / 2.0 < o->position.x + o->structure.size / 2.0)
 			||
-			(i->position.x + i->size / 2.0 > o->position.x - o->size / 2.0
-			&& i->position.x + i->size / 2.0 < o->position.x + o->size / 2.0)
+			(p->position.x + p->structure.size / 2.0 > o->position.x - o->structure.size / 2.0
+			&& p->position.x + p->structure.size / 2.0 < o->position.x + o->structure.size / 2.0)
 			||
-			(o->position.x - o->size / 2.0 > i->position.x - i->size / 2.0
-			&& o->position.x - o->size / 2.0 < i->position.x + i->size / 2.0)
+			(o->position.x - o->structure.size / 2.0 > p->position.x - p->structure.size / 2.0
+			&& o->position.x - o->structure.size / 2.0 < p->position.x + p->structure.size / 2.0)
 			||
-			(o->position.x + o->size / 2.0 > i->position.x - i->size / 2.0
-			&& o->position.x + o->size / 2.0 < i->position.x + i->size / 2.0))
+			(o->position.x + o->structure.size / 2.0 > p->position.x - p->structure.size / 2.0
+			&& o->position.x + o->structure.size / 2.0 < p->position.x + p->structure.size / 2.0))
 			&&
-			((i->position.y - i->size / 2.0 > o->position.y - o->size / 2.0
-			&& i->position.y - i->size / 2.0 < o->position.y + o->size / 2.0)
+			((p->position.y - p->structure.size / 2.0 > o->position.y - o->structure.size / 2.0
+			&& p->position.y - p->structure.size / 2.0 < o->position.y + o->structure.size / 2.0)
 			||
-			(i->position.y + i->size / 2.0 > o->position.y - o->size / 2.0
-			&& i->position.y + i->size / 2.0 < o->position.y + o->size / 2.0)
+			(p->position.y + p->structure.size / 2.0 > o->position.y - o->structure.size / 2.0
+			&& p->position.y + p->structure.size / 2.0 < o->position.y + o->structure.size / 2.0)
 			||
-			(o->position.y - o->size / 2.0 > i->position.y - i->size / 2.0
-			&& o->position.y - o->size / 2.0 < i->position.y + i->size / 2.0)
+			(o->position.y - o->structure.size / 2.0 > p->position.y - p->structure.size / 2.0
+			&& o->position.y - o->structure.size / 2.0 < p->position.y + p->structure.size / 2.0)
 			||
-			(o->position.y + o->size / 2.0 > i->position.y - i->size / 2.0
-			&& o->position.y + o->size / 2.0 < i->position.y + i->size / 2.0))
+			(o->position.y + o->structure.size / 2.0 > p->position.y - p->structure.size / 2.0
+			&& o->position.y + o->structure.size / 2.0 < p->position.y + p->structure.size / 2.0))
 		) {
-			// A collision occurred between i and o
-			if (o->type == Spaceship && i->type == Blast ||
-				o->type == Asteroid && i->type == Asteroid)
-			{
-				continue;
-			}
-			else if (o->type == Spaceship && i->type == Asteroid) {
-				o->state = -1;
-			}
-			else if (o->type == Asteroid && i->type == Spaceship) {
-				i->state = -1;
-			}
-			else if (o->type == Asteroid && i->type == Blast ||
-				o->type == Blast && i->type == Asteroid)
-			{		
-				o->state = -1;
-				i->state = -1;
-			}
-			return 1;
-			
+			collide_object(o, p);
 		}
 	}
-	
-	return 0;
 }
 
-void move(Object* o) {		
-	// Heading
-	o->heading = rotate(o->heading, o->speed.r);
-	
+void object_state(Object* o) {
+	if(o->state.value & Charging) {
+		o->state.value = 0;
+	}
+	if(o->state.value & Collision) {
+		o->state.value = 0;
+	}
+}
+
+void move_object(Object* o) {
 	// Velocity
-	o->speed.x += o->acceleration * sinf(o->heading);
-	o->speed.y += o->acceleration * cosf(o->heading);
-	if (fabs(o->speed.x) > o->max_speed)
-		o->speed.x = o->max_speed * o->speed.x / fabs(o->speed.x);
-	if (fabs(o->speed.y) > o->max_speed)
-		o->speed.y = o->max_speed * o->speed.y / fabs(o->speed.y);
+	if(o->state.value & EngineFail) {
+		o->acceleration.x = o->acceleration.y = o->acceleration.r = 0;
+	}
+	
+	o->velocity.x += o->acceleration.x;
+	if(fabs(o->velocity.x) > o->max_speed)
+		o->velocity.x = o->max_speed * o->velocity.x / fabs(o->velocity.x);
+	
+	o->velocity.y += o->acceleration.y;
+	if(fabs(o->velocity.y) > o->max_speed)
+		o->velocity.y = o->max_speed * o->velocity.y / fabs(o->velocity.y);
 		
-	// Distance
-	o->position.x += o->speed.x;
-	o->position.y -= o->speed.y;
-	if (o->position.x > SCREEN_X - o->size / 2.0)
-		o->position.x -= SCREEN_X;
-	else if (o->position.x < -o->size / 2.0)
-		o->position.x += SCREEN_X;
-	if (o->position.y > SCREEN_Y - o->size / 2.0)
-		o->position.y -= SCREEN_Y;
-	else if (o->position.y < - o->size / 2.0)
-		o->position.y += SCREEN_Y;
+	// Position
+	o->position.r = rotate(o->position.r, o->velocity.r);
+	o->position.x += o->velocity.x;
+	o->position.y -= o->velocity.y;
+	if (o->position.x > game->resolution.x)
+		o->position.x -= game->resolution.x;
+	else if (o->position.x < -o->structure.size / 2.0)
+		o->position.x += game->resolution.x;
+	if (o->position.y > game->resolution.y)
+		o->position.y -= game->resolution.y;
+	else if (o->position.y < - o->structure.size / 2.0)
+		o->position.y += game->resolution.y;
 		
-	// State recovery
-	if (o->state > 0) {
-		o->state -= 1;
-	}
-	else if (o->state < -1) {
-		o->state += 1;
-	}
-}
-
-void draw(Object* o) {
-	move(o);
-	ALLEGRO_TRANSFORM transform;
-	// for hit target tracking
-	al_identity_transform(&transform);
-	al_translate_transform(&transform, o->position.x + o->size / 2.0, o->position.y + o->size / 2.0);
-	al_use_transform(&transform);
-	//al_draw_filled_rectangle(-o->size / 2.0, -o->size / 2.0, o->size / 2.0, o->size / 2.0, al_map_rgb(255,255,255));
-	al_identity_transform(&transform);
-	al_rotate_transform(&transform, o->heading);
-	al_translate_transform(&transform, o->position.x + o->size / 2.0, o->position.y + o->size / 2.0);
-	al_use_transform(&transform);
-	if (o->type == Asteroid) {
-		al_draw_line(-20, 20, -25, 5, o->color, 2.0f);
-		al_draw_line(-25, 5, -25, -10, o->color, 2.0f);
-		al_draw_line(-25, -10, -5, -10, o->color, 2.0f);
-		al_draw_line(-5, -10, -10, -20, o->color, 2.0f);
-		al_draw_line(-10, -20, 5, -20, o->color, 2.0f);
-		al_draw_line(5, -20, 20, -10, o->color, 2.0f);
-		al_draw_line(20, -10, 20, -5, o->color, 2.0f);
-		al_draw_line(20, -5, 0, 0, o->color, 2.0f);
-		al_draw_line(0, 0, 20, 10, o->color, 2.0f);
-		al_draw_line(20, 10, 10, 20, o->color, 2.0f);
-		al_draw_line(10, 20, 0, 15, o->color, 2.0f);
-		al_draw_line(0, 15, -20, 20, o->color, 2.0f);
-	}
-	else if (o->type == Spaceship) {
-		al_draw_line(-8, 9, 0, -11, o->color, 3.0f);
-		al_draw_line(0, -11, 8, 9, o->color, 3.0f);
-		al_draw_line(-6, 4, -1, 4, o->color, 3.0f);
-		al_draw_line(6, 4, 1, 4, o->color, 3.0f);
-		if (o->acceleration > 0) {
-			al_draw_line(-8, 9, 8, 9, al_map_rgb(255,0,0), 3.0f);
-		}
-		else if (o->acceleration < 0) {
-			al_draw_line(-8, 9, 8, 9, al_map_rgb(0,0,255), 3.0f);
-		}
-	}
-	else if (o->type == Blast) {
-		al_draw_filled_rectangle(-2, -2, 2, 2, o->color);
-	}
+	// State time
+	if (o->state.time > 0)
+		o->state.time -= 1;
+	else
+		object_state(o);
 	
-	al_identity_transform(&transform);
-	al_use_transform(&transform);
+	// Check for collisions
+	if(!(o->state.value & Collision))
+		collision_scan(o);
 }
-
-Object* create(Type type) {
-	static int id = 0;
-	
-	// Don't need to explicitly create the user's ship.
-	if (!ship && type != Spaceship)
-		abort_game("Need to create Spaceship first");
-	
-	// Only make blast if the ship has energy
-	if (ship->state > 0 && type == Blast)
-		return NULL;
-		
-	Object* o = (Object*)malloc(sizeof(Object));
-	o->id = id++;
-	o->type = type;
-	o->position.x = 0;
-	o->position.y = 0;
-	o->speed.x = 0;
-	o->speed.y = 0;
-	o->speed.r = 0;
-	o->heading = 0;
-	o->acceleration = 0;
-	o->size = 0;
-	o->max_speed = 5.0;
-	o->state = 0;
-	o->color = al_map_rgb(255,255,255);
-	o->next = NULL;
-	if (type == Spaceship) {
-		o->size = 15.0;
-		o->position.x = SCREEN_X / 2.0 + o->size / 2.0;
-		o->position.y = SCREEN_Y / 2.0 + o->size / 2.0;
-		o->color = al_map_rgb(0,255,0);
-	}
-	else if (type == Asteroid) {
-		o->size = 40.0;
-		o->position.x = rand() % (int)SCREEN_X;
-		o->position.y = rand() % (int)SCREEN_Y;
-		o->heading = 0.0;
-		o->speed.x = (float)rand() / (float)RAND_MAX * o->max_speed * 2.0 - o->max_speed;
-		o->speed.y = (float)rand() / (float)RAND_MAX * o->max_speed * 2.0 - o->max_speed;
-		o->speed.r = (float)rand() / (float)RAND_MAX - 0.5;
-		o->color = al_map_rgb(0,255,255);
-	}
-	else if (type == Blast) {
-		ship->state = 5;
-		o->max_speed = 10.0;
-		o->state = -40;
-		o->size = 5.0;
-		o->heading = ship->heading;
-		o->position.x = ship->position.x + 8;
-		o->position.y = ship->position.y + fabs(8 * sinf(o->heading));
-		o->speed.x = o->max_speed * sinf(o->heading);
-		o->speed.y = o->max_speed * cosf(o->heading);
-		o->color = al_map_rgb(255,255,255);
-	}
-	
-	if (!ship) {
-		ship = o;
-	}
-	else if (!ship->next) {
-		ship->next = o;
-	}
-	else {
-		o->next = ship->next;
-		ship->next = o;
-	}
-	
-	return o;
-}
-
-void clean() {
-	Object* o;
-	for (o = ship; o != NULL; o = o->next)
-	{
-		collide(o);
-		if (o->state == -1)
-			destroy(o);
-	}
-}
-
-void draw_all() {
-	Object* o;
-	for (o = ship; o != NULL; o = o->next) {
-		draw(o);
-	}
-}
-

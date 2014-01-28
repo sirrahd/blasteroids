@@ -1,4 +1,8 @@
-#include "blasteroids.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <time.h>
+#include "game.h"
 
 enum MYKEYS {
 	KEY_UP, 
@@ -9,18 +13,22 @@ enum MYKEYS {
 	KEYCOUNT
 };
 
+const float FPS = 60;
+const float SCREEN_X = 640;
+const float SCREEN_Y = 480;
+
 int done;
 ALLEGRO_EVENT_QUEUE* event_queue;
 ALLEGRO_TIMER* timer;
 ALLEGRO_DISPLAY* display;
 
+void shutdown() {
+	return;
+}
+
 void abort_game(const char* message) {
 	fprintf(stderr, "%s\n", message);
 	exit(1);
-}
-
-void shutdown() {
-	return;
 }
 
 void init() {
@@ -50,14 +58,6 @@ void init() {
 	done = false;
 }
 
-void new_game() {
-	ship = create(Spaceship);
-	
-	int asteroidCount;
-	for(asteroidCount = rand() % 5; asteroidCount >=0; asteroidCount--)
-		create(Asteroid);
-}
-
 void game_loop() {
 	int redraw = true;
 	al_start_timer(timer);
@@ -76,31 +76,38 @@ void game_loop() {
 		
 		if (event.type == ALLEGRO_EVENT_TIMER) {
 			if(key[KEY_UP]) {
-				ship->acceleration = 0.2;
+				if (game->ship)
+					accelerate_object(game->ship, 0.2);
 			}
 			
 			if(key[KEY_DOWN]) {
-				ship->acceleration = -0.2;
+				if (game->ship)
+					accelerate_object(game->ship, -0.2);
 			}
 			
 			if(key[KEY_UP] && key[KEY_DOWN]) {
-				ship->acceleration = 0.0;
+				if (game->ship)
+					accelerate_object(game->ship, 0.0);
 			}
 			
 			if(key[KEY_LEFT]) {
-				ship->speed.r = -1.0;
+				if (game->ship)
+					rotate_object(game->ship, -1.0);
 			}
 			
 			if(key[KEY_RIGHT]) {
-				ship->speed.r = 1.0;
+				if (game->ship)
+					rotate_object(game->ship, 1.0);
 			}
 			
 			if(key[KEY_RIGHT] && key[KEY_LEFT]) {
-				ship->speed.r = 0.0;
+				if (game->ship)
+					rotate_object(game->ship, 0.0);
 			}
 			
 			if(key[KEY_SPACE]) {
-				create(Blast);
+				if (game->ship)
+					new_blast(game->ship);
 			}
 			
 			redraw = true;
@@ -118,7 +125,7 @@ void game_loop() {
 				
 				case ALLEGRO_KEY_DOWN:
 				case ALLEGRO_KEY_S:
-					key[KEY_DOWN] = true;
+					key[KEY_DOWN] = false;//true;
 					break;
 				
 				case ALLEGRO_KEY_LEFT:
@@ -142,25 +149,29 @@ void game_loop() {
 			case ALLEGRO_KEY_UP:
 			case ALLEGRO_KEY_W:
 				key[KEY_UP] = false;
-				ship->acceleration = 0;
+				if (game->ship)
+					accelerate_object(game->ship, 0);
 				break;
 			
 			case ALLEGRO_KEY_DOWN:
 			case ALLEGRO_KEY_S:
 				key[KEY_DOWN] = false;
-				ship->acceleration = 0;
+				if (game->ship)
+					accelerate_object(game->ship, 0);
 				break;
 			
 			case ALLEGRO_KEY_LEFT:
 			case ALLEGRO_KEY_A:
 				key[KEY_LEFT] = false;
-				ship->speed.r = 0;
+				if (game->ship)
+					rotate_object(game->ship, 0);
 				break;
 			
 			case ALLEGRO_KEY_RIGHT:
 			case ALLEGRO_KEY_D:
 				key[KEY_RIGHT] = false;
-				ship->speed.r = 0;
+				if (game->ship)
+					rotate_object(game->ship, 0);
 				break;
 			
 			case ALLEGRO_KEY_SPACE:
@@ -178,8 +189,7 @@ void game_loop() {
 			redraw = false;
 			al_set_target_bitmap(al_get_backbuffer(display));
 			al_clear_to_color(al_map_rgb(0,0,0));
-			draw_all();
-			clean();
+			draw_screen();
 			al_flip_display();
 		}
 	}
