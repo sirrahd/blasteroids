@@ -21,9 +21,22 @@ void draw_screen() {
 	Object* o;
 	for(o = list_next(game->objects); o != NULL; o = list_next(game->objects)) {
 		move_object(o);
-		draw_object(o);
-		if(o->state.value & Dead && o->state.time == 0)
-			delete_object(o);
+		
+		draw_object(o, o->position.x, o->position.y);
+		if (o->position.x + o->structure.size / 2 > game->resolution.x)
+			draw_object(o, o->position.x - game->resolution.x, o->position.y);
+		else if (o->position.x - o->structure.size / 2 < 0)
+			draw_object(o, o->position.x + game->resolution.x, o->position.y);
+		if (o->position.y + o->structure.size / 2 > game->resolution.y)
+			draw_object(o, o->position.x, o->position.y - game->resolution.y);
+		else if (o->position.y - o->structure.size / 2 < 0)
+			draw_object(o, o->position.x, o->position.y + game->resolution.y);
+		
+		// State
+		if (o->state.time > 0)
+			o->state.time -= 1;
+		else
+			object_state_transition(o);
 	}
 }
 	

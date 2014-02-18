@@ -35,7 +35,7 @@ void delete_object(Object* o) {
 	free(o);
 }
 
-void draw_object(Object* o) {
+void draw_object(Object* o, float x, float y) {
 	ALLEGRO_TRANSFORM transform;
 	/* start for hit target tracking
 	al_identity_transform(&transform);
@@ -45,7 +45,7 @@ void draw_object(Object* o) {
 	*/// end hit target tracking
 	al_identity_transform(&transform);
 	al_rotate_transform(&transform, o->position.r);
-	al_translate_transform(&transform, o->position.x, o->position.y);
+	al_translate_transform(&transform, x, y);
 	al_use_transform(&transform);
 	switch(o->type) {
 		case Spaceship:
@@ -85,13 +85,14 @@ void accelerate_object(Object* o, float linear) {
 // Modifies objects o and p in response to a collision
 void collide_object(Object* o, Object* p) {
 	if(
-		(o->type == Blast && p == game->ship) ||
-		(p->type == Blast && o == game->ship) ||
-		(o->type == Blast && p->type == Blast)
+		(o->type == Blast && p == game->ship)
+		|| (p->type == Blast && o == game->ship)
+		|| (o->type == Blast && p->type == Blast)
 	)
 		return;
 	
 	o->state.value = o->state.value | (Collision | EngineFail);
+	p->state.value = p->state.value | (Collision | EngineFail);
 	o->state.time = p->state.time = 10;
 	
 	Euclidean vo;
@@ -116,11 +117,35 @@ void collide_object(Object* o, Object* p) {
 	p->velocity.x = vp.x;
 	p->velocity.y = vp.y;
 	p->velocity.r = vp.r;
+	
+	if(o->type == Blast && p->type == Asteroid) {
+		o->state.value = o->state.value | Dead;
+		o->state.time = 0;
+		p->state.value = p->state.value | Dead;
+		p->state.time = 60;
+	}
+	else if(o->type == Asteroid && p->type == Blast) {
+		o->state.value = o->state.value | Dead;
+		o->state.time = 60;
+		p->state.value = p->state.value | Dead;
+		p->state.time = 0;
+	}
+	else if(o->type == Spaceship && p->type == Asteroid) {
+		o->state.value = o->state.value | Dead;
+		o->state.time = 60;
+		p->state.value = p->state.value | Dead;
+		p->state.time = 60;
+	}
+	else if(o->type == Asteroid && p->type == Spaceship) {
+		o->state.value = 0->state.value | Dead;
+		o->state.time = 60
+		p->state.value = p->state.value | Dead;
+		p->state.time = 60;
 }
 
 // Scans the game list for any collisions with the object after the object
 // Based on the current state of the game list
-void collision_scan(Object* o) {
+int collision_scan(Object* o, int x, int y) {
 	Object* p = NULL;
 	List child = {
 		.start = game->objects->current,
@@ -128,41 +153,49 @@ void collision_scan(Object* o) {
 	};
 	for(p = list_next(&child); p != NULL; p = list_next(&child)) {
 		if (
-			((p->position.x - p->structure.size / 2.0 > o->position.x - o->structure.size / 2.0
-			&& p->position.x - p->structure.size / 2.0 < o->position.x + o->structure.size / 2.0)
+			((p->position.x - p->structure.size / 2.0 > x - o->structure.size / 2.0
+			&& p->position.x - p->structure.size / 2.0 < x + o->structure.size / 2.0)
 			||
-			(p->position.x + p->structure.size / 2.0 > o->position.x - o->structure.size / 2.0
-			&& p->position.x + p->structure.size / 2.0 < o->position.x + o->structure.size / 2.0)
+			(p->position.x + p->structure.size / 2.0 > x - o->structure.size / 2.0
+			&& p->position.x + p->structure.size / 2.0 < x + o->structure.size / 2.0)
 			||
-			(o->position.x - o->structure.size / 2.0 > p->position.x - p->structure.size / 2.0
-			&& o->position.x - o->structure.size / 2.0 < p->position.x + p->structure.size / 2.0)
+			(x - o->structure.size / 2.0 > p->position.x - p->structure.size / 2.0
+			&& x - o->structure.size / 2.0 < p->position.x + p->structure.size / 2.0)
 			||
-			(o->position.x + o->structure.size / 2.0 > p->position.x - p->structure.size / 2.0
-			&& o->position.x + o->structure.size / 2.0 < p->position.x + p->structure.size / 2.0))
+			(x + o->structure.size / 2.0 > p->position.x - p->structure.size / 2.0
+			&& x + o->structure.size / 2.0 < p->position.x + p->structure.size / 2.0))
 			&&
-			((p->position.y - p->structure.size / 2.0 > o->position.y - o->structure.size / 2.0
-			&& p->position.y - p->structure.size / 2.0 < o->position.y + o->structure.size / 2.0)
+			((p->position.y - p->structure.size / 2.0 > y - o->structure.size / 2.0
+			&& p->position.y - p->structure.size / 2.0 < y + o->structure.size / 2.0)
 			||
-			(p->position.y + p->structure.size / 2.0 > o->position.y - o->structure.size / 2.0
-			&& p->position.y + p->structure.size / 2.0 < o->position.y + o->structure.size / 2.0)
+			(p->position.y + p->structure.size / 2.0 > y - o->structure.size / 2.0
+			&& p->position.y + p->structure.size / 2.0 < y + o->structure.size / 2.0)
 			||
-			(o->position.y - o->structure.size / 2.0 > p->position.y - p->structure.size / 2.0
-			&& o->position.y - o->structure.size / 2.0 < p->position.y + p->structure.size / 2.0)
+			(y - o->structure.size / 2.0 > p->position.y - p->structure.size / 2.0
+			&& y - o->structure.size / 2.0 < p->position.y + p->structure.size / 2.0)
 			||
-			(o->position.y + o->structure.size / 2.0 > p->position.y - p->structure.size / 2.0
-			&& o->position.y + o->structure.size / 2.0 < p->position.y + p->structure.size / 2.0))
+			(y + o->structure.size / 2.0 > p->position.y - p->structure.size / 2.0
+			&& y + o->structure.size / 2.0 < p->position.y + p->structure.size / 2.0))
 		) {
 			collide_object(o, p);
+			return 1;
 		}
 	}
+	
+	return 0;
 }
 
-void object_state(Object* o) {
+void object_state_transition(Object* o) {
+	
+	if(o->state.value & Dead) {
+		delete_object(o);
+		return;
+	}
 	if(o->state.value & Charging) {
-		o->state.value = 0;
+		o->state.value = o->state.value & !Charging;
 	}
 	if(o->state.value & Collision) {
-		o->state.value = 0;
+		o->state.value = o->state.value & !Collision;
 	}
 }
 
@@ -192,14 +225,18 @@ void move_object(Object* o) {
 		o->position.y -= game->resolution.y;
 	else if (o->position.y < - o->structure.size / 2.0)
 		o->position.y += game->resolution.y;
-		
-	// State time
-	if (o->state.time > 0)
-		o->state.time -= 1;
-	else
-		object_state(o);
 	
 	// Check for collisions
-	if(!(o->state.value & Collision))
-		collision_scan(o);
+	if(!(o->state.value & Collision)) {
+		if(!collision_scan(o, o->position.x, o->position.y)) {
+			if (o->position.x + o->structure.size / 2 > game->resolution.x)
+				collision_scan(o, o->position.x - game->resolution.x, o->position.y);
+			else if (o->position.x - o->structure.size / 2 < 0)
+				collision_scan(o, o->position.x + game->resolution.x, o->position.y);
+			if (o->position.y + o->structure.size / 2 > game->resolution.y)
+				collision_scan(o, o->position.x, o->position.y - game->resolution.y);
+			else if (o->position.y - o->structure.size / 2 < 0)
+				collision_scan(o, o->position.x, o->position.y + game->resolution.y);
+		}
+	}
 }
