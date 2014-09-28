@@ -3,14 +3,17 @@ W=-Werror
 CFLAGS=-lallegro -lallegro_primitives -lm -p
 COPTS=-O3
 DEBUGFLAGS=$(CFLAGS) $(W) -g
-OBJECTS=blasteroids.o object.o
+
+SOURCES=blasteroids.c game.c object.c asteroid.c list.c spaceship.c blast.c
+OBJECTS=$(addprefix $(OUTDIR)/,$(SOURCES:.c=.o))
 
 default: clean debug run
 
-production: *.c *.h
+production: $(SOURCES)
 	$(CC) $^ -o blasteroids $(COPTS) $(CFLAGS) 
+	./blasteroids
 	
-debug: *.c *.h
+debug: $(SOURCES)
 	$(CC) $^ -o blasteroids $(DEBUGFLAGS)
 
 run:

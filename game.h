@@ -1,72 +1,22 @@
+#pragma once
+
 #include <allegro5/allegro.h>
+#include <math.h>
 #include "list.h"
-
-enum State {
-	Normal = 0,
-	Dead = 1,
-	Charging = 1 << 1,
-	Collision = 1 << 2,
-	EngineFail = 1 << 3
-};
-
-typedef enum {
-	Spaceship,
-	Asteroid,
-	Blast
-} Type;
+#include "object.h"
 
 typedef struct {
-	float x;
-	float y;
-	float r;
-} Euclidean;
-
-typedef struct {
-	Type type;
-	struct {
-		float size;
-		ALLEGRO_COLOR color;
-	} structure;
-	struct {
-		int value;
-		int time;
-	} state;
-	Euclidean position;
-	Euclidean velocity;
-	Euclidean acceleration;
-	float max_speed;
-} Object;
-
-typedef struct {
-	struct {
-		int x;
-		int y;
-	} resolution;
+	Euclidean resolution;
 	int lives;
 	List* objects;
 	Object* ship;
+	ALLEGRO_MUTEX* mutex;
 } Game;
 
-Object* new_object();
-void delete_object(Object* o);
-void collide_object(Object* o, Object* p);
-void rotate_object(Object* o, int direction);
-void accelerate_object(Object* o, float linear);
-void move_object(Object* o);
-void draw_object(Object* o, float x, float y);
-void object_state_transition(Object* o);
+Game* game_new(int resX, int resY);
+void game_draw(Game* game);
+void game_move(Game* game);
+void ship_rotate(Object* o, int direction);
+void ship_accelerate(Object* o, float linear);
+void game_delete();
 
-Object* new_spaceship();
-void draw_spaceship(Object* o);
-
-Object* new_blast(Object* owner);
-void draw_asteroid(Object* o);
-
-Object* new_asteroid();
-void draw_asteroid(Object* o);
-
-Game* new_game();
-void delete_game();
-void draw_screen();
-
-extern Game* game;

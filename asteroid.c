@@ -3,7 +3,7 @@
 #include <allegro5/allegro_primitives.h>
 #include "game.h"
 
-void draw_asteroid(Object* o) {
+void asteroid_draw(Object* o) {
 	al_draw_line(-20, 20, -25, 5, o->structure.color, 2.0f);
 	al_draw_line(-25, 5, -25, -10, o->structure.color, 2.0f);
 	al_draw_line(-25, -10, -5, -10, o->structure.color, 2.0f);
@@ -18,20 +18,28 @@ void draw_asteroid(Object* o) {
 	al_draw_line(0, 15, -20, 20, o->structure.color, 2.0f);
 }
 
-Object* new_asteroid() {
-	Object* o = new_object();
+void asteroid_define(Object* o, Euclidean resolution) {
 	o->type = Asteroid;
-	o->structure.size = 40.0;
-	o->structure.color = al_map_rgb(0,255,255);
-	o->position.x = rand() % (int)game->resolution.x;
-	o->position.y = rand() % (int)game->resolution.y;
-	o->max_speed = 3.0;
-	o->velocity.x = (float)rand() / (float)RAND_MAX * o->max_speed * 2.0 - o->max_speed;
-	o->velocity.y = (float)rand() / (float)RAND_MAX * o->max_speed * 2.0 - o->max_speed;
+	
+	o->speed_limit = 2.0;
+
+	o->position.x = rand() % (int)resolution.x;
+	o->position.y = rand() % (int)resolution.y;
+	o->position.r = 0.0;
+
+	o->velocity.x = (float)rand() / (float)RAND_MAX * o->speed_limit * 2.0 - o->speed_limit;
+	o->velocity.y = (float)rand() / (float)RAND_MAX * o->speed_limit * 2.0 - o->speed_limit;
 	o->velocity.r = (float)rand() / (float)RAND_MAX - 0.5;
+
 	o->acceleration.x = 0.0;
 	o->acceleration.y = 0.0;
 	o->acceleration.r = 0.0;
+
+	o->structure.size = 40.0;
+	o->structure.color = al_map_rgb(0,255,255);
 	
-	return o;
+	o->state.no_blast = 0;
+	o->state.no_accel = 0;
+	o->state.dead = 0;
 }
+

@@ -3,26 +3,31 @@
 #include <allegro5/allegro_primitives.h>
 #include "game.h"
 
-void draw_blast(Object* o) {
+void blast_draw(Object* o) {
 	al_draw_filled_rectangle(-2, -2, 2, 2, o->structure.color);
 }
 
-Object* new_blast(Object* owner) {
-	if(owner->state.value == 2)
-		return;
-	owner->state.value = Charging;
-	owner->state.time = 5;
-	Object* o = new_object();
+void blast_define(Object* o, Object* parent, Euclidean start) {
 	o->type = Blast;
-	o->state.value = Dead;
-	o->state.time = 40;
-	o->max_speed = 10.0;
+
+	o->speed_limit = 10.0;
+
+	o->position.x = start.x;
+	o->position.y = start.y;
+	o->position.r = start.r;
+
+	o->velocity.x = o->speed_limit * sinf(o->position.r);
+	o->velocity.y = o->speed_limit * cosf(o->position.r);
+  o->velocity.r = 0.0;
+  
+	o->acceleration.x = 0.0;
+	o->acceleration.y = 0.0;
+	o->acceleration.r = 0.0;
+
 	o->structure.size = 5.0;
 	o->structure.color = al_map_rgb(255,255,255);
-	o->state.time = 50;
-	o->position.x = owner->position.x;
-	o->position.y = owner->position.y;
-	o->position.r = owner->position.r;
-	o->velocity.x = o->max_speed * sinf(o->position.r);
-	o->velocity.y = o->max_speed * cosf(o->position.r);
+	
+	o->state.no_accel = 0;
+	o->state.no_blast = 0;
+	o->state.dead = 40;
 }

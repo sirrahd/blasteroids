@@ -53,7 +53,7 @@ void* list_next(List* list) {
 }
 
 // Instantiates and returns new list
-List* new_list() {
+List* list_new() {
 	List* list = malloc(sizeof(List));
 	list->start = NULL;
 	list->current = NULL;
@@ -62,7 +62,7 @@ List* new_list() {
 }
 
 // Deletes list completely
-void delete_list(List* list) {
+void list_delete(List* list) {
 	if(list->start) {
 		fprintf(stderr, "Attempted list delete before list items were removed\n");
 		exit(1);

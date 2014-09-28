@@ -2,7 +2,7 @@
 #include <allegro5/allegro_primitives.h>
 #include "game.h"
 
-void draw_spaceship(Object* o) {
+void spaceship_draw(Object* o) {
 	al_draw_line(-8, 9, 0, -11, o->structure.color, 3.0f);
 	al_draw_line(0, -11, 8, 9, o->structure.color, 3.0f);
 	al_draw_line(-6, 4, -1, 4, o->structure.color, 3.0f);
@@ -12,15 +12,28 @@ void draw_spaceship(Object* o) {
 	}
 }
 
-Object* new_spaceship() {
-	Object* s = new_object();
-	s->type = Spaceship;
-	s->structure.size = 15.0;
-	s->structure.color = al_map_rgb(0,255,0);
-	s->position.x = game->resolution.x / 2.0 + s->structure.size / 2.0;
-	s->position.y = game->resolution.y / 2.0 + s->structure.size / 2.0;
-	s->max_speed = 5.0;
+void spaceship_define(Object* o, Euclidean resolution) {
+	o->type = Spaceship;
+
+	o->speed_limit = 3.0;
+
+	o->position.x = resolution.x / 2.0 + o->structure.size / 2.0;
+	o->position.y = resolution.y / 2.0 + o->structure.size / 2.0;
+	o->position.r = 0.0;
+
+  o->velocity.x = 0.0;
+  o->velocity.y = 0.0;
+  o->velocity.r = 0.0;
+  
+	o->acceleration.x = 0.0;
+	o->acceleration.y = 0.0;
+	o->acceleration.r = 0.0;
+
+	o->structure.size = 15.0;
+	o->structure.color = al_map_rgb(0,255,0);
 	
-	return s;
+	o->state.no_blast = 0;
+	o->state.no_accel = 0;
+	o->state.dead = 0;
 }
 

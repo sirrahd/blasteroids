@@ -3,85 +3,141 @@
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_primitives.h>
 #include "game.h"
+#include "list.h"
+#include "object.h"
+#include "spaceship.h"
+#include "asteroid.h"
 
 // Creates a new object
-Object* new_object()
+Object* object_new(Type type, Euclidean resolution)
 {
 	Object* o = malloc(sizeof(Object));
-	list_add(game->objects, o);
-	
-	o->type = Spaceship;
-	o->structure.size = 0.0;
-	o->structure.color = al_map_rgb(0,0,0);
-	o->state.value = 0;
-	o->state.time = 0;
-	o->position.x = 0;
-	o->position.y = 0;
-	o->position.r = 0.0;
-	o->velocity.x = 0.0;
-	o->velocity.y = 0.0;
-	o->velocity.r = 0.0;
-	o->acceleration.x = 0.0;
-	o->acceleration.y = 0.0;
-	o->acceleration.r = 0.0;
-	o->max_speed = 0.0;
-	
+	switch(type) {
+    case Spaceship:
+    	spaceship_define(o, resolution);
+      break;
+    case Asteroid:
+      asteroid_define(o, resolution);
+      break;
+    case Blast:
+      blast_define(o, resolution);
+      break;
+	 }
 	return o;
 }
 	
 // Deletes an object
-void delete_object(Object* o) {
-	list_remove(game->objects, o);
-	free(o);
+void object_delete(Object* object) {
+	//TODO
+	return;
+	//list_remove(game->objects, o);
+	//free(o);
 }
 
-void draw_object(Object* o, float x, float y) {
+void prepare_transform(Object* o, Euclidean position)
+{
 	ALLEGRO_TRANSFORM transform;
-	/* start for hit target tracking
+#ifdef DEBUG
 	al_identity_transform(&transform);
-	al_translate_transform(&transform, o->position.x, o->position.y);
+	al_translate_transform(&transform, position.x, position.y);
 	al_use_transform(&transform);
 	al_draw_filled_rectangle(-o->structure.size / 2.0, -o->structure.size / 2.0, o->structure.size / 2.0, o->structure.size / 2.0, al_map_rgb(255,255,255));
-	*/// end hit target tracking
-	al_identity_transform(&transform);
+#endif
+
+  al_identity_transform(&transform);
 	al_rotate_transform(&transform, o->position.r);
-	al_translate_transform(&transform, x, y);
+	al_translate_transform(&transform, position.x, position.y);
 	al_use_transform(&transform);
+}
+
+void call_draw(Object* o) {
 	switch(o->type) {
 		case Spaceship:
-			draw_spaceship(o);
+			spaceship_draw(o);
 			break;
 		case Asteroid:
-			draw_asteroid(o);
+			asteroid_draw(o);
 			break;
 		case Blast:
-			draw_blast(o);
+			blast_draw(o);
 			break;
 	}
-	al_identity_transform(&transform);
-	al_use_transform(&transform);
+}
+
+void object_draw(Object* o, Euclidean resolution) {
+  prepare_transform(o, o->position);
+  call_draw(o);
+  if (o->mirror.x != o->position.x || o->mirror.y != o->position.y) {
+    prepare_transform(o, o->mirror);
+    call_draw(o);
+  }
+}
+
+void update_state(Object* o) {
+  if (o->state.no_blast > 0)
+    --o->state.no_blast;
+  if (o->state.no_accel > 0)
+    --o->state.no_accel;
+  if (o->state.dead > 0)
+    --o->state.dead;
+}
+
+void update_velocity(Object* o) {
+  o->velocity.x += o->acceleration.x;	
+	o->velocity.y += o->acceleration.y;
+	
+	if (fabs(o->velocity.x) > o->speed_limit)
+	  o->velocity.x = o->speed_limit * o->velocity.x / fabs(o->velocity.x);
+	  
+	if (fabs(o->velocity.y) > o->speed_limit)
+	  o->velocity.y = o->speed_limit * o->velocity.y / fabs(o->velocity.y);
 }
 
 float rotate(float heading, float speed) {
-	const float rotation_unit = (float)(M_PI / 16.0);
-	while(fabs(heading) > 2 * M_PI) {
-		if(heading > 0)
-			heading -= 2 * M_PI;
-		else
-			heading += 2 * M_PI;
-	}
-	return heading + rotation_unit * speed;
+  const float rotation_unit = (float)(M_PI / 32.0);
+  while(fabs(heading) > 2 * M_PI) {
+    if(heading > 0)
+      heading -= 2 * M_PI;
+    else
+      heading += 2 * M_PI;
+  }
+  return heading + rotation_unit * speed;
 }
 
-void rotate_object(Object* o, int direction) {
-	o->velocity.r = (float)direction;
+void update_position(Object* o, Euclidean boundaries) {
+	o->position.r = rotate(o->position.r, o->velocity.r);
+	o->position.x += o->velocity.x;
+	o->position.y -= o->velocity.y;
+	if (o->position.x > boundaries.x)
+		o->position.x -= boundaries.x;
+	else if (o->position.x < 0)
+		o->position.x += boundaries.x;
+	if (o->position.y > boundaries.y)
+		o->position.y -= boundaries.y;
+	else if (o->position.y < 0)
+		o->position.y += boundaries.y;
+
+	if (o->position.x + o->structure.size / 2 > boundaries.x)
+		o->mirror.x = o->position.x - boundaries.x;
+	else if (o->position.x - o->structure.size / 2 < 0)
+		o->mirror.x = o->position.x + boundaries.x;
+	else
+	  o->mirror.x = o->position.x;
+	if (o->position.y + o->structure.size / 2 > boundaries.y)
+		o->mirror.y = o->position.y - boundaries.y;
+	else if (o->position.y - o->structure.size / 2 < 0)
+		o->mirror.y = o->position.y + boundaries.y;
+	else
+	  o->mirror.y = o->position.y;
 }
 
-void accelerate_object(Object* o, float linear) {
-	o->acceleration.x = linear * sinf(o->position.r);
-	o->acceleration.y = linear * cosf(o->position.r);
+void object_move(Object* o, List* list, Euclidean boundaries) {
+  update_state(o);
+  update_velocity(o);
+  update_position(o, boundaries);
+  //check collisions
 }
-
+/*
 // Modifies objects o and p in response to a collision
 void collide_object(Object* o, Object* p) {
 	if(
@@ -137,8 +193,8 @@ void collide_object(Object* o, Object* p) {
 		p->state.time = 60;
 	}
 	else if(o->type == Asteroid && p->type == Spaceship) {
-		o->state.value = 0->state.value | Dead;
-		o->state.time = 60
+		o->state.value = o->state.value | Dead;
+		o->state.time = 60;
 		p->state.value = p->state.value | Dead;
 		p->state.time = 60;
 }
@@ -239,4 +295,5 @@ void move_object(Object* o) {
 				collision_scan(o, o->position.x, o->position.y + game->resolution.y);
 		}
 	}
-}
+  return;
+}*/

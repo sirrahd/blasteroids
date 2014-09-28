@@ -1,47 +1,53 @@
 #include <stdlib.h>
 #include "game.h"
+#include "list.h"
 
-Game* game = NULL;
+Game* game_new(int resX, int resY) {
+	Game* game = malloc(sizeof(Game));
 
-Game* new_game() {
-	game = malloc(sizeof(Game));
-
-	game->resolution.x = 640;
-	game->resolution.y = 480;
+	game->resolution.x = resX;
+	game->resolution.y = resY;
 	game->lives = 3;
-	game->objects = new_list();
-	game->ship = new_spaceship();
+	game->objects = list_new();
+	game->ship = object_new(Spaceship, game->resolution);
+	
+	list_add(game->objects, game->ship);
 	
 	int i;
-	for (i = 0; i < 5; i++)
-		new_asteroid();
+	for (i = 0; i < 5; i++) {
+		list_add(game->objects, object_new(Asteroid, game->resolution));
+	}
+	
+	return game;
 }
 
-void draw_screen() {
+void game_draw(Game* game) {
 	Object* o;
 	for(o = list_next(game->objects); o != NULL; o = list_next(game->objects)) {
-		move_object(o);
-		
-		draw_object(o, o->position.x, o->position.y);
-		if (o->position.x + o->structure.size / 2 > game->resolution.x)
-			draw_object(o, o->position.x - game->resolution.x, o->position.y);
-		else if (o->position.x - o->structure.size / 2 < 0)
-			draw_object(o, o->position.x + game->resolution.x, o->position.y);
-		if (o->position.y + o->structure.size / 2 > game->resolution.y)
-			draw_object(o, o->position.x, o->position.y - game->resolution.y);
-		else if (o->position.y - o->structure.size / 2 < 0)
-			draw_object(o, o->position.x, o->position.y + game->resolution.y);
-		
-		// State
-		if (o->state.time > 0)
-			o->state.time -= 1;
-		else
-			object_state_transition(o);
+		object_draw(o, game->resolution);
 	}
 }
-	
-/*
-void delete_game() {
+
+void game_move(Game* game) {
+	Object* o;
+	for(o = list_next(game->objects); o != NULL; o = list_next(game->objects)) {
+		object_move(o, game->objects, game->resolution);
+  }
+}
+
+void ship_rotate(Object* o, int direction) {
+  o->velocity.r = (float)direction;
+}
+
+void ship_accelerate(Object* o, float direction) {
+  o->acceleration.x = direction * 0.05 * sinf(o->position.r);
+  o->acceleration.y = direction * 0.05 * cosf(o->position.r);
+}
+
+void game_delete() {
+  return;
+  //TODO
+  /*
 	list_reset(game->objects);
 	Object* o;
 	for(o = list_next(game->objects); o != NULL; o = list_next(game->objects))
@@ -49,5 +55,12 @@ void delete_game() {
 		
 	delete_list(game->objects);
 	free(game);
+	*/
+}
+
+/*
+void accelerate_object(Object* o, float linear) {
+	o->acceleration.x = linear * sinf(o->position.r);
+	o->acceleration.y = linear * cosf(o->position.r);
 }
 */
