@@ -1,6 +1,6 @@
 #include <stdlib.h>
+#include <math.h>
 #include "game.h"
-#include "list.h"
 
 Game* game_new(int resX, int resY) {
 	Game* game = malloc(sizeof(Game));

@@ -2,11 +2,10 @@
 #include <math.h>
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_primitives.h>
-#include "game.h"
-#include "list.h"
 #include "object.h"
 #include "spaceship.h"
 #include "asteroid.h"
+#include "blast.h"
 
 // Creates a new object
 Object* object_new(Type type, Euclidean resolution)

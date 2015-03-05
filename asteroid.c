@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_primitives.h>
-#include "game.h"
+#include "asteroid.h"
 
 void asteroid_draw(Object* o) {
 	al_draw_line(-20, 20, -25, 5, o->structure.color, 2.0f);

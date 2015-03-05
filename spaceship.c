@@ -1,6 +1,6 @@
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_primitives.h>
-#include "game.h"
+#include "spaceship.h"
 
 void spaceship_draw(Object* o) {
 	al_draw_line(-8, 9, 0, -11, o->structure.color, 3.0f);

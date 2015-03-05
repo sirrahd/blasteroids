@@ -1,13 +1,13 @@
 #include <math.h>
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_primitives.h>
-#include "game.h"
+#include "blast.h"
 
 void blast_draw(Object* o) {
 	al_draw_filled_rectangle(-2, -2, 2, 2, o->structure.color);
 }
 
-void blast_define(Object* o, Object* parent, Euclidean start) {
+void blast_define(Object* o, Euclidean start) {
 	o->type = Blast;
 
 	o->speed_limit = 10.0;
